@@ -7,6 +7,7 @@ app.use(cors({
     origin : process.env.ORIGIN,
     credentials : true
 }))
+
 app.use(express.json({limit : "20kb"}))
 app.use(express.urlencoded({extended : true , limit : "20kb"}))
 app.use(express.static('public'))

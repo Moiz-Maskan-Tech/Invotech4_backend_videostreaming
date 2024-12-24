@@ -24,6 +24,7 @@ const registerUser = asyncHandler(async (req, res) => {
     }
   }
 
+    //put the await here to resolve the error
   const existedUser = await User.findOne({
     $or: [{ username }, { email }],
   });
@@ -63,7 +64,7 @@ const registerUser = asyncHandler(async (req, res) => {
   console.log('user created : ',user)
 
   const createdUser = await User.findById(user._id).select(
-    " -password -refreshToken "
+    " -password -refreshToken"
   );
 
   if(!createdUser){

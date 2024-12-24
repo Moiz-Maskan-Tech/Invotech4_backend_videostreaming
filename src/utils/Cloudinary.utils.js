@@ -4,7 +4,7 @@ import {
   cloudinary_cloud_name,
   cloudinary_api_key,
   cloudinary_api_secret,
-} from "../constants";
+} from "../constants.js";
 
 cloudinary.config({
   cloud_name: cloudinary_cloud_name,
@@ -20,6 +20,9 @@ const uploadOnCloudinary = async (localFilePath) => {
       resource_type: "auto",
     });
     console.log("File is uploaded succesfully", response.url);
+    // this will unlink the file 
+    fs.unlinkSync(localFilePath);
+    return response;
   } catch (err) {
     fs.unlinkSync(localFilePath); // remove the file locally saved temporary file as the uploaded opration got failed
     return null;

@@ -3,6 +3,7 @@ import {
   registerUser,
   loginUser,
   logoutUser,
+  ChangeCurrentPassword
 } from "../controllers/user.controller.js";
 const router = Router();
 import { upload } from "../middlewares/multer.middleware.js";
@@ -27,5 +28,6 @@ router.route("/login").post(loginUser);
 
 // secure route
 router.route("/logout").post(verifyJWT, logoutUser);
+router.route("/changepassword").post(ChangeCurrentPassword)
 
 export default router;

@@ -185,4 +185,46 @@ const logoutUser = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, {}, "User loggedout succesfully"));
 });
 
-export { registerUser, loginUser, logoutUser };
+const ChangeCurrentPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword } = req.body;
+  console.log("oldPassword : ", oldPassword);
+  console.log("newPassword : ", newPassword);
+
+  const user = await User.findById(req.user?._id);
+  const isPassowrdCorrect = await user.isPassowrdCorrect(oldPassword);
+
+  if (!isPassowrdCorrect) {
+    throw new ApiError(400, "Invalid old password");
+  }
+
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "password changed succesfully"));
+});
+
+const updateAccountDetails = asyncHandler(async (req, res) => {
+  const { fullname, email } = req.body;
+  if(!fullname || !email){
+    throw new ApiError(400,"All fields are required")
+  }
+
+  const user = User.findByIdAndUpdate(req?.user?._id, {
+    $set : {
+      fullname,
+      email : email
+    }
+  } , {new : true} ).select("-password");
+
+  return res.status(200).json(new ApiResponse(200 , user , "Accounts Details updated succesfully"))
+
+});
+
+export {
+  registerUser,
+  loginUser,
+  logoutUser,
+  ChangeCurrentPassword,
+  updateAccountDetails,
+};

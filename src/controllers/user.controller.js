@@ -206,20 +206,149 @@ const ChangeCurrentPassword = asyncHandler(async (req, res) => {
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
   const { fullname, email } = req.body;
-  if(!fullname || !email){
-    throw new ApiError(400,"All fields are required")
+  if (!fullname || !email) {
+    throw new ApiError(400, "All fields are required");
   }
 
-  const user = User.findByIdAndUpdate(req?.user?._id, {
-    $set : {
-      fullname,
-      email : email
-    }
-  } , {new : true} ).select("-password");
+  const user = User.findByIdAndUpdate(
+    req?.user?._id,
+    {
+      $set: {
+        fullname,
+        email: email,
+      },
+    },
+    { new: true }
+  ).select("-password");
 
-  return res.status(200).json(new ApiResponse(200 , user , "Accounts Details updated succesfully"))
-
+  return res
+    .status(200)
+    .json(new ApiResponse(200, user, "Accounts Details updated succesfully"));
 });
+
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  const avatarLocalPath = req.file?.path;
+
+  if (!avatarLocalPath) {
+    throw new ApiError(400, "Avatar file is missing");
+  }
+
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+
+  if (!avatar.url) {
+    throw new ApiError(400, "Error while uploading the avatar on cloudinary");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    req.res?._id,
+    {
+      $set: {
+        avatar: avatar.url,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(ApiResponse(200, user, "avatar image updated succesfully"));
+});
+
+const updateCoverImage = asyncHandler(async (req, res) => {
+  const coverImageLocalPath = req.file?.path;
+
+  if (!coverImageLocalPath) {
+    throw new ApiError(400, "Cover imahe missing");
+  }
+
+  const coverImage = uploadOnCloudinary(coverImageLocalPath);
+
+  if (!coverImage.url) {
+    throw new ApiError(400, "Error while uploading the file");
+  }
+
+  const user = User.findByIdAndUpdate(req.res?._id, {
+    $set: {
+      coverImage: coverImage.url,
+    },
+  }).select("-password");
+
+  res
+    .status(200)
+    .json(ApiResponse(200, user, "converImage updated succesfully"));
+});
+
+const getUserChannelProfile = asyncHandler(async(req,res) => {
+  const {username} = req.params;
+
+  if(!username.trim()){
+    throw new ApiError(400,"Username is missing")
+  }
+
+  const channel = await User.aggregate([
+    {
+      $match : {
+        username : username?.toLowerCase()
+      }
+    },
+    {
+      $lookup : {
+        from :"Subscriptions",
+        localField : "_id",
+        foreignField : "Channel",
+        as : "subscribers"
+      }
+    },
+    {
+      $lookup : {
+        from :"Subscriptions",
+        localField : "_id",
+        foreignField : "Subscriber",
+        as : "subscribedTo"
+      }
+    },
+    {
+      $addFields : {
+        SubscriberCount : {
+          $size : "$subscribers"
+        },
+        ChannelSubscribedToCount : {
+          $size : "$subscribedTo"
+        },
+        isSubscribed : {
+          $count : {
+            if:{
+              $in : [req.user?._id,"$subscribers.subscribe"],
+              then : true,
+              else : false
+            }
+          }
+        }
+      }
+    },
+    {
+      $project : {
+        fullname : 1,
+        username : 1,
+        SubscriberCount : 1,
+        ChannelSubscribedToCount : 1,
+        isSubscribed : 1,
+        avatar : 1,
+        coverImage : 1,
+        email : 1
+      }
+    }
+  ])
+
+  if(!channel?.length){
+    throw new ApiError(404,"Channed does not exists")
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200 , Channel[0],"user fetched succesfully")
+  )
+
+})
 
 export {
   registerUser,
@@ -227,4 +356,7 @@ export {
   logoutUser,
   ChangeCurrentPassword,
   updateAccountDetails,
+  updateUserAvatar,
+  updateCoverImage,
+  getUserChannelProfile
 };
